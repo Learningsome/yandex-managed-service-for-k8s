@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "100m"
+        limits:
+          memory: "128Mi"
+          cpu: "200m"
+      volumeMounts:
+        - name: config-volume
+          mountPath: /etc/nginx
+        - name: auth-secret
+          mountPath: /usr/local/nginx/conf/.htpasswd
+          subPath: .htpasswd
+          readOnly: true
+        - name: persistent-storage
+          mountPath: /usr/share/nginx/html
+      env:
+        - name: NGINX_ENTRYPOINT_QUIET_LOGS
+          value: "1"
+  volumes:
+    - name: config-volume
+      configMap:
+        name: nginx-config
+    - name: auth-secret
+      secret:
+        secretName: nginx-basic-auth
+    - name: persistent-storage
+      persistentVolumeClaim:
+        claimName: nginx-pvc

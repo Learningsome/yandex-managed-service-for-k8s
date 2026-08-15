@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |
+    # This is a test comment to verify ConfigMap changes
+    events {}
+
+    http {
+        server {
+            listen 80;
+            server_name localhost;
+
+            location / {
+                root /usr/share/nginx/html;
+                index index.html index.htm;
+
+                auth_basic "Restricted Access";
+                auth_basic_user_file /usr/local/nginx/conf/.htpasswd;
+            }
+        }
+    }

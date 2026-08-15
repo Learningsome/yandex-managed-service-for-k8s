@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nginx-with-svc
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: nginx-with-svc
+data:
+  default.conf.template: |
+    server {
+        listen 80;
+        server_name localhost;
+
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+
+            add_header Content-Type text/html;
+            sub_filter 'POD_NAME' '${POD_NAME}';
+            sub_filter_once on;                
+        }
+    }
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Welcome to Nginx</title>
+    </head>
+    <body>
+        <h1>Welcome to Nginx!</h1>
+        <p>If you see this page, the Nginx web server is successfully configured and basic auth is in use.</p>
+        <p>Learn more about deploying and managing applications with Kubernetes in our comprehensive Kubernetes course.</p>
+        <p>Pod Name: POD_NAME</p>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: nginx-with-svc
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/nginx/templates/default.conf.template
+              subPath: default.conf.template
+            - name: config-volume
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+      volumes:
+        - name: config-volume
+          configMap:
+            name: nginx-config
